@@ -235,6 +235,15 @@ def get_lock_fuse():
 
 
 def fuses(*args, **kwargs):
+    global f_cpu
+    global uart
+    global oscillator
+    global bod
+    global eesave
+    global avrdude_conf
+    global uploader
+    global uploader_flags
+
     # Define F_CPU
     if(str(env.GetProjectOption("board_build.f_cpu")) != "None"):
         f_cpu = str(env.GetProjectOption("board_build.f_cpu")).upper()
@@ -298,6 +307,14 @@ def fuses(*args, **kwargs):
 
 
 def bootloader(*args, **kwargs):
+    global target
+    global f_cpu
+    global uart
+    global baud_rate
+    global avrdude_conf
+    global uploader
+    global uploader_flags
+
     # Do not burn bootloader for targets that doesn't support it
     if(target == "ATmega48" or target == "ATmega48P" or target == "ATtiny13"):
         print("\n\nError target %s doesn't support bootloader" % target)
