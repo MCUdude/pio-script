@@ -6,25 +6,23 @@ platform = env.PioPlatform()
 avrdude_dir = platform.get_package_dir("tool-avrdude")
 avrdude_conf = os.path.join(avrdude_dir, "avrdude.conf")
 
-# Default values
-target = str(env.GetProjectOption("board"))
-uploader = str(env.GetProjectOption("upload_protocol"))
-uploader_flags = str("".join(env.GetProjectOption("upload_flags")))
-baud_rate = str(env.GetProjectOption("board_upload.speed"))
+# Fetch values from platformio.ini
+target = str(env.GetProjectOption("board"))                         # ATmega328P for instance
+uploader = str(env.GetProjectOption("upload_protocol"))							# Avrdude supported programmer
+uploader_flags = str("".join(env.GetProjectOption("upload_flags"))) # Extra Avrdude flags
+baud_rate = str(env.GetProjectOption("board_upload.speed"))         # Bootloader upload baud rate
+
+# Default values if not specified in platformio.ini
 f_cpu = "8000000L"
 oscillator = "internal"
 bod = "2.7v"
 eesave = "yes"
 uart = "uart0"
 
-def get_lfuse():
-    global target
-    global f_cpu
-    global oscillator
-    global bod
-    global eesave
 
-    # Return manually defined lfuse if present in platformio.ini
+
+def get_lfuse():
+    # Return manually defined low fuse if present in platformio.ini
     if(str(env.GetProjectOption("board_fuses.lfuse")) != "None"):
         return int(env.GetProjectOption("board_fuses.lfuse"), 0)
 
@@ -93,16 +91,11 @@ def get_lfuse():
                 return 0x6b & ~(eesave_bit << 6)
 
     else:
+        # Return negative value if low fuse could not be calculated
         return -1
 
 
 def get_hfuse():
-    global eesave
-    global oscillator
-    global target
-    global uart
-    global bod
-
     # Return manually defined hfuse if present in platformio.ini
     if(str(env.GetProjectOption("board_fuses.hfuse")) != "None"):
         return int(env.GetProjectOption("board_fuses.hfuse"), 0)
@@ -173,9 +166,6 @@ def get_hfuse():
         return -1
 
 def get_efuse():
-    global target
-    global bod
-
     # Return manually defined efuse if present in platformio.ini
     if(str(env.GetProjectOption("board_fuses.efuse")) != "None"):
         return int(env.GetProjectOption("board_fuses.efuse"), 0)
@@ -235,6 +225,7 @@ def get_efuse():
         return -1
 
 
+
 def get_lock_fuse():
     if(str(env.GetProjectOption("board_fuses.lock")) != "None"):
         return int(env.GetProjectOption("board_fuses.lock"), 0)
@@ -242,17 +233,15 @@ def get_lock_fuse():
         return 0x0f
 
 
-def shared_parameters():
-    global f_cpu
-    global uart
 
+def fuses(*args, **kwargs):
     # Define F_CPU
     if(str(env.GetProjectOption("board_build.f_cpu")) != "None"):
         f_cpu = str(env.GetProjectOption("board_build.f_cpu")).upper()
-        print("\nClock speed specified\t\tUsing board_build.f_cpu = %s" % f_cpu)
+        print("\n\nClock speed specified\t\tUsing board_build.f_cpu = %s" % f_cpu)
     else:
-        print("\nClock speed not specified\tUsing board_build.f_cpu = %s" % f_cpu)
-    
+        print("\n\nClock speed not specified\tUsing board_build.f_cpu = %s" % f_cpu)
+
     # Define UART port
     if(str(env.GetProjectOption("hardware.uart")).lower() == "uart0" or str(env.GetProjectOption("hardware.uart")).lower() == "uart1" or str(env.GetProjectOption("hardware.uart")).lower() == "uart2" or str(env.GetProjectOption("hardware.uart")).lower() == "uart3"):
         uart = str(env.GetProjectOption("hardware.uart")).lower()
@@ -262,21 +251,6 @@ def shared_parameters():
         print("UART not specified\t\tNo bootloader will be installed")
     else:
         print("UART port not specified\t\tDefault is hardware.uart = %s" % uart)
-
-
-
-def fuses(*args, **kwargs):
-    print("\n")
-    global avrdude_conf
-    global target
-    global f_cpu
-    global oscillator
-    global bod
-    global eesave
-    global uart
-
-    # Some parameters are used for setting fuses and burning bootloader
-    shared_parameters()
     
     # Define internal or external oscillator
     if(str(env.GetProjectOption("hardware.oscillator")).lower() == "internal" or str(env.GetProjectOption("hardware.oscillator")).lower() == "external"):
@@ -302,36 +276,55 @@ def fuses(*args, **kwargs):
     else:
         eesave = "yes"
         print("EESAVE not specified\t\tEEPROM will be retained")
-    
-    
-    # Store fuses and make sure we have two digits
+
+    # Store and format fuses
     low_fuse = str("{0:#0{1}x}".format(get_lfuse(),4))
     high_fuse = str("{0:#0{1}x}".format(get_hfuse(),4))
     ext_fuse = str("{0:#0{1}x}".format(get_efuse(),4))
 
-    print("\nCalculated low fuse:  %s" % low_fuse)
-    print("Calculated high fuse: %s" % high_fuse)
-    print("Calculated ext fuse:  %s" % ext_fuse)
+    # Prevent unsupported targets to execute Avrdude
+    if(low_fuse == "-0x1" or high_fuse == "-0x1"):
+        print("Target %s not supported, Aborting..." % target)
+        return -1
+    else:
+        print("\nCalculated lfuse: %s" % low_fuse)
+        print("Calculated hfuse: %s" % high_fuse)
+        print("Calculated efuse: %s\n" % ext_fuse)
 
-    # Generate fuses command and run Avrdude
-    fuses_cmd = "avrdude -C%s -p%s -c%s %s -v -Ulock:w:0x3f:m -Ulfuse:w:%s:m -Uhfuse:w:%s:m %s" % (avrdude_conf, target.lower(), uploader, uploader_flags, low_fuse, high_fuse, ("-Uefuse:w:%s:m" % ext_fuse if ext_fuse != "-0x1" else ""))
-    env.Execute(fuses_cmd)
-    return 0
+        # Generate fuses command and run Avrdude
+        fuses_cmd = "avrdude -C%s -p%s -c%s %s -v -Ulock:w:0x3f:m -Ulfuse:w:%s:m -Uhfuse:w:%s:m %s" % (avrdude_conf, target.lower(), uploader, uploader_flags, low_fuse, high_fuse, ("-Uefuse:w:%s:m" % ext_fuse if ext_fuse != "-0x1" else ""))
+        return env.Execute(fuses_cmd)
+
 
 
 def bootloader(*args, **kwargs):
     # Do not burn bootloader for targets that doesn't support it
     if(target == "ATmega48" or target == "ATmega48P" or target == "ATtiny13"):
-        print("Target %s doesn't support bootloader" % target)
+        print("\n\nError target %s doesn't support bootloader" % target)
         return -1
 
-    # Some parameters are used for setting fuses and burning bootloader
-    shared_parameters()
+    # Define F_CPU
+    if(str(env.GetProjectOption("board_build.f_cpu")) != "None"):
+        f_cpu = str(env.GetProjectOption("board_build.f_cpu")).upper()
+        print("\n\nClock speed specified\t\tUsing board_build.f_cpu = %s" % f_cpu)
+    else:
+        print("\n\nClock speed not specified\tUsing board_build.f_cpu = %s" % f_cpu)
 
+    # Define UART port
+    if(str(env.GetProjectOption("hardware.uart")).lower() == "uart0" or str(env.GetProjectOption("hardware.uart")).lower() == "uart1" or str(env.GetProjectOption("hardware.uart")).lower() == "uart2" or str(env.GetProjectOption("hardware.uart")).lower() == "uart3"):
+        uart = str(env.GetProjectOption("hardware.uart")).lower()
+        print("UART port specified\t\tUsing hardware.uart = %s" % uart)
+    elif(str(env.GetProjectOption("hardware.uart")) != "None"):
+        uart = "no_bootloader"
+        print("UART not specified\t\tNo bootloader will be installed")
+    else:
+        print("UART port not specified\t\tDefault is hardware.uart = %s" % uart)
+
+    # Baud rate guard
     if(baud_rate != "None"):
         print("Baud rate specified\t\tUsing board_upload.speed = %s\n" % baud_rate)
     else:
-        print("Baud rate not specified. Please specify board_upload.speed in platformio.ini\n")
+        print("Baud rate not specified.\tPlease specify board_upload.speed in platformio.ini\n")
         return -1
     
     lock_fuse = str("{0:#0{1}x}".format(get_lock_fuse(),4))
@@ -346,13 +339,11 @@ def bootloader(*args, **kwargs):
     else:
         bigboot = ""
 
-
     # Generate bootloader command and run Avrdude
     bootloader_file = str(platform.get_package_dir("framework-arduinoavr")) + "/optiboot_flash/bootloaders/%s/%s/optiboot_flash_%s_%s_%s_%s%s.hex" % (target.lower(), f_cpu, target.lower(), uart.upper(), baud_rate, f_cpu, bigboot)
     bootloader_cmd = "avrdude -C%s -p%s -c%s %s -v -Uflash:w:%s:i -Ulock:w:%s:m" % (avrdude_conf, target.lower(), uploader, uploader_flags, bootloader_file, lock_fuse)
-    print(bootloader_cmd)
-    env.Execute(bootloader_cmd)
-    return 0
+    return env.Execute(bootloader_cmd)
+
 
 
 env.AlwaysBuild(env.Alias("fuses", None, fuses))
