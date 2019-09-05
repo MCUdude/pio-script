@@ -30,7 +30,7 @@ def get_lfuse():
 
     if(target == "ATmega2561" or target == "ATmega2560"  or target == "ATmega1284"  or target == "ATmega1284P" or \
        target == "ATmega1281" or target == "ATmega1280"  or target == "ATmega644A"  or target == "ATmega644P"  or \
-       target == "ATmega640"  or target == "ATmega328"   or target == "Atmega328P"  or target == "ATmega324A"  or \
+       target == "ATmega640"  or target == "ATmega328"   or target == "ATmega328P"  or target == "ATmega324A"  or \
        target == "ATmega324P" or target == "ATmega324PA" or target == "ATmega168"   or target == "ATmega168P"  or \
        target == "ATmega164A" or target == "ATmega164P"  or target == "ATmega88"    or target == "ATmega88P"   or \
        target == "ATmega48"   or target == "ATmega48P"):
@@ -79,8 +79,8 @@ def get_lfuse():
         if(oscillator == "external"):
             return 0x78 & ~(eesave_bit << 6)
         else:
-            if(f_cpu == "9600000L"):
-                return 0x7a & ~(eesave_bit << 6)
+            if(f_cpu == "9600000L" or f_cpu == "8000000L"):
+                return 0x7a & ~(eesave_bit << 6) # Defaults to 9.6 MHz
             elif(f_cpu == "4800000L"):
                 return 0x79 & ~(eesave_bit << 6)
             elif(f_cpu == "1200000L"):
@@ -121,7 +121,7 @@ def get_hfuse():
 
     if(target == "ATmega2561" or target == "ATmega2560" or target == "ATmega1284"  or target == "ATmega1284P" or \
        target == "ATmega1281" or target == "ATmega1280" or target == "ATmega644A"  or target == "ATmega644P"  or \
-       target == "ATmega640"  or target == "ATmega328"  or target == "Atmega328P"  or target == "Atmega328PB" or \
+       target == "ATmega640"  or target == "ATmega328"  or target == "ATmega328P"  or target == "ATmega328PB" or \
        target == "ATmega324A" or target == "ATmega324P" or target == "ATmega324PA" or target == "ATmega324PB" or \
        target == "AT90CAN128" or target == "AT90CAN64"  or target == "AT90CAN32"):
         if(uart == "no_bootloader"):
@@ -182,7 +182,7 @@ def get_efuse():
 
     if(target == "ATmega2561" or target == "ATmega2560"  or target == "ATmega1284" or target == "ATmega1284P" or \
        target == "ATmega1281" or target == "ATmega1280"  or target == "ATmega644A" or target == "ATmega644P"  or \
-       target == "ATmega640"  or target == "ATmega328"   or target == "Atmega328P" or target == "ATmega324A"  or \
+       target == "ATmega640"  or target == "ATmega328"   or target == "ATmega328P" or target == "ATmega324A"  or \
        target == "ATmega324P" or target == "ATmega324PA" or target == "ATmega164A" or target == "ATmega164P"):
         if(bod == "4.3v"):
             return 0xfc
@@ -242,6 +242,28 @@ def get_lock_fuse():
         return 0x0f
 
 
+def shared_parameters():
+    global f_cpu
+    global uart
+
+    # Define F_CPU
+    if(str(env.GetProjectOption("board_build.f_cpu")) != "None"):
+        f_cpu = str(env.GetProjectOption("board_build.f_cpu")).upper()
+        print("\nClock speed specified\t\tUsing board_build.f_cpu = %s" % f_cpu)
+    else:
+        print("\nClock speed not specified\tUsing board_build.f_cpu = %s" % f_cpu)
+    
+    # Define UART port
+    if(str(env.GetProjectOption("hardware.uart")).lower() == "uart0" or str(env.GetProjectOption("hardware.uart")).lower() == "uart1" or str(env.GetProjectOption("hardware.uart")).lower() == "uart2" or str(env.GetProjectOption("hardware.uart")).lower() == "uart3"):
+        uart = str(env.GetProjectOption("hardware.uart")).lower()
+        print("UART port specified\t\tUsing hardware.uart = %s" % uart)
+    elif(str(env.GetProjectOption("hardware.uart")) != "None"):
+        uart = "no_bootloader"
+        print("UART not specified\t\tNo bootloader will be installed")
+    else:
+        print("UART port not specified\t\tDefault is hardware.uart = %s" % uart)
+
+
 
 def fuses(*args, **kwargs):
     print("\n")
@@ -253,12 +275,8 @@ def fuses(*args, **kwargs):
     global eesave
     global uart
 
-    # Define F_CPU
-    if(str(env.GetProjectOption("board_build.f_cpu")) != "None"):
-        f_cpu = str(env.GetProjectOption("board_build.f_cpu")).upper()
-        print("Clock speed specified\t\tUsing board_build.f_cpu = %s" % f_cpu)
-    else:
-        print("Clock speed not specified\tUsing board_build.f_cpu = %s" % f_cpu)
+    # Some parameters are used for setting fuses and burning bootloader
+    shared_parameters()
     
     # Define internal or external oscillator
     if(str(env.GetProjectOption("hardware.oscillator")).lower() == "internal" or str(env.GetProjectOption("hardware.oscillator")).lower() == "external"):
@@ -285,30 +303,57 @@ def fuses(*args, **kwargs):
         eesave = "yes"
         print("EESAVE not specified\t\tEEPROM will be retained")
     
-    # Define UART port
-    if(str(env.GetProjectOption("hardware.uart")).lower() == "uart0" or str(env.GetProjectOption("hardware.uart")).lower() == "uart1" or str(env.GetProjectOption("hardware.uart")).lower() == "uart2" or str(env.GetProjectOption("hardware.uart")).lower() == "uart3"):
-        uart = str(env.GetProjectOption("hardware.uart")).lower()
-        print("UART port specified\t\tUsing hardware.uart = %s" % uart)
-    elif(str(env.GetProjectOption("hardware.uart")) != "None"):
-        uart = "no_bootloader"
-        print("UART not specified\t\tNo bootloader will be installed")
-    else:
-        print("UART port not specified\t\tDefault is hardware.uart = %s" % uart)
     
     # Store fuses and make sure we have two digits
     low_fuse = str("{0:#0{1}x}".format(get_lfuse(),4))
     high_fuse = str("{0:#0{1}x}".format(get_hfuse(),4))
     ext_fuse = str("{0:#0{1}x}".format(get_efuse(),4))
-    lock_fuse = str("{0:#0{1}x}".format(get_lock_fuse(),4))
 
     print("\nCalculated low fuse:  %s" % low_fuse)
     print("Calculated high fuse: %s" % high_fuse)
     print("Calculated ext fuse:  %s" % ext_fuse)
-    print("Calculated lock fuse: %s\n" % lock_fuse)
 
-    # Generate command and run Avrdude
+    # Generate fuses command and run Avrdude
     fuses_cmd = "avrdude -C%s -p%s -c%s %s -v -Ulock:w:0x3f:m -Ulfuse:w:%s:m -Uhfuse:w:%s:m %s" % (avrdude_conf, target.lower(), uploader, uploader_flags, low_fuse, high_fuse, ("-Uefuse:w:%s:m" % ext_fuse if ext_fuse != "-0x1" else ""))
     env.Execute(fuses_cmd)
+    return 0
+
+
+def bootloader(*args, **kwargs):
+    # Do not burn bootloader for targets that doesn't support it
+    if(target == "ATmega48" or target == "ATmega48P" or target == "ATtiny13"):
+        print("Target %s doesn't support bootloader" % target)
+        return -1
+
+    # Some parameters are used for setting fuses and burning bootloader
+    shared_parameters()
+
+    if(baud_rate != "None"):
+        print("Baud rate specified\t\tUsing board_upload.speed = %s\n" % baud_rate)
+    else:
+        print("Baud rate not specified. Please specify board_upload.speed in platformio.ini\n")
+        return -1
+    
+    lock_fuse = str("{0:#0{1}x}".format(get_lock_fuse(),4))
+    print("Calculated lock fuse: %s\n" % lock_fuse)
+
+    # Does the target have a BIGBOOT bootloader?
+    if(target == "ATmega2561" or target == "ATmega2560" or target == "ATmega1284" or target == "ATmega1284P" or \
+       target == "ATmega1281" or target == "ATmega1280" or target == "ATmega644A" or target == "ATmega644P"  or \
+       target == "ATmega640"  or target == "ATmega128"  or target == "ATmega64"   or target == "AT90CAN128"  or \
+       target == "AT90CAN64"  or target == "AT90CAN32"):
+        bigboot = "_BIGBOOT"
+    else:
+        bigboot = ""
+
+
+    # Generate bootloader command and run Avrdude
+    bootloader_file = str(platform.get_package_dir("framework-arduinoavr")) + "/optiboot_flash/bootloaders/%s/%s/optiboot_flash_%s_%s_%s_%s%s.hex" % (target.lower(), f_cpu, target.lower(), uart.upper(), baud_rate, f_cpu, bigboot)
+    bootloader_cmd = "avrdude -C%s -p%s -c%s %s -v -Uflash:w:%s:i -Ulock:w:%s:m" % (avrdude_conf, target.lower(), uploader, uploader_flags, bootloader_file, lock_fuse)
+    print(bootloader_cmd)
+    env.Execute(bootloader_cmd)
+    return 0
 
 
 env.AlwaysBuild(env.Alias("fuses", None, fuses))
+env.AlwaysBuild(env.Alias("bootloader", None, bootloader))
