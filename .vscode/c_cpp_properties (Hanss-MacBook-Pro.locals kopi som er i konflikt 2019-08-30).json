@@ -1,0 +1,60 @@
+{
+    "configurations": [
+        {
+            "name": "!!! WARNING !!! AUTO-GENERATED FILE, PLEASE DO NOT MODIFY IT AND USE https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags"
+        },
+        {
+            "name": "Mac",
+            "macFrameworkPath": [],
+            "includePath": [
+                "/Users/hans/Dropbox/ADV_SCRIPT/include",
+                "/Users/hans/Dropbox/ADV_SCRIPT/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/cores/MiniCore",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/variants/minicore_standard",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/AVR_examples/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/EEPROM/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/Optiboot_flasher/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/SPI/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/SPI1/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/SoftwareSerial/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/Wire/src",
+                "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/Wire1/src",
+                "/Users/hans/.platformio/packages/tool-unity",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/Users/hans/Dropbox/ADV_SCRIPT/include",
+                    "/Users/hans/Dropbox/ADV_SCRIPT/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/cores/MiniCore",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/variants/minicore_standard",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/AVR_examples/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/EEPROM/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/Optiboot_flasher/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/SPI/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/SPI1/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/SoftwareSerial/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/Wire/src",
+                    "/Users/hans/.platformio/packages/framework-arduinoavr/libraries/__cores__/MiniCore/Wire1/src",
+                    "/Users/hans/.platformio/packages/tool-unity",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=40002",
+                "ARDUINO_AVR_ATmega168P",
+                "F_CPU=1000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10805",
+                "__AVR_ATmega168P__",
+                ""
+            ],
+            "intelliSenseMode": "clang-x64",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "\"/Users/hans/.platformio/packages/toolchain-atmelavr/bin/avr-gcc\" -mmcu=atmega168p"
+        }
+    ],
+    "version": 4
+}
